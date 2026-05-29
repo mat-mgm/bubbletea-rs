@@ -122,6 +122,18 @@ impl TerminalGuard {
         Ok(())
     }
 
+    /// Re-enter raw mode after a suspend/resume cycle.
+    ///
+    /// Calling `restore()` leaves raw mode disabled. Call `resume()` after
+    /// `SIGCONT` to re-enable it.
+    pub fn resume(&mut self) -> io::Result<()> {
+        if self.is_tty && !self.raw_enabled {
+            terminal::enable_raw_mode()?;
+            self.raw_enabled = true;
+        }
+        Ok(())
+    }
+
     /// Restore terminal state now (idempotent). Called by `Drop` as well.
     pub fn restore(&mut self) {
         let _ = self.set_mouse(MouseMode::None);

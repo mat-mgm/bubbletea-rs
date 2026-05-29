@@ -2,6 +2,7 @@
 //! [`run`]. Port of `tea.go`'s `Program`.
 
 mod run;
+pub(crate) mod signals;
 
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;

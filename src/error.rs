@@ -17,6 +17,9 @@ pub enum Error {
     /// An IO error from the terminal or output.
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
+    /// A subprocess launched via `exec_process` failed.
+    #[error("exec error: {0}")]
+    Exec(std::io::Error),
 }
 
 /// Result alias used across the crate.

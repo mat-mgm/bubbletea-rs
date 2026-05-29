@@ -29,6 +29,7 @@ pub const DEFAULT_FPS: u16 = 60;
 pub const MAX_FPS: u16 = 120;
 
 pub mod clipboard;
+pub mod exec;
 pub mod color;
 pub mod command;
 pub mod cursor;
@@ -49,6 +50,7 @@ pub mod view;
 
 // --- Public prelude-style re-exports (mirrors the flat `tea.X` Go API) --------
 
+pub use exec::exec_process;
 pub use clipboard::{
     read_clipboard, read_primary_clipboard, set_clipboard, set_primary_clipboard, ClipboardMsg,
 };

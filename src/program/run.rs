@@ -1,5 +1,8 @@
 //! The async event loop. Port of `tea.go`'s `Run`/`eventLoop`/`handleCommands`.
 
+#[cfg(unix)]
+extern crate libc;
+
 use std::panic::AssertUnwindSafe;
 
 use futures::FutureExt;
@@ -21,6 +24,7 @@ use crate::message::{
     RequestWindowSizeMsg, SequenceMsg, SuspendMsg, WindowSizeMsg,
 };
 use crate::model::Model;
+use crate::exec::ExecMsg;
 use crate::renderer::{NilRenderer, Renderer, StandardRenderer};
 use crate::terminal::TerminalGuard;
 
@@ -46,6 +50,11 @@ pub(crate) async fn run<M: Model>(mut program: Program<M>) -> Result<M> {
         if g.is_tty() {
             crate::input::spawn(msg_tx.clone(), program.cancel.clone());
         }
+    }
+
+    // Spawn OS signal listeners unless disabled.
+    if !program.opts.ignore_signals && !program.opts.disable_signal_handler {
+        super::signals::spawn(msg_tx.clone(), program.cancel.clone());
     }
 
     // Detect and broadcast the color profile.
@@ -132,7 +141,7 @@ fn handle<M: Model>(
     msg: Msg,
     msg_tx: &mpsc::UnboundedSender<Msg>,
     renderer: &mut Box<dyn Renderer>,
-    guard: Option<&mut TerminalGuard>,
+    mut guard: Option<&mut TerminalGuard>,
 ) -> Flow {
     let catch = program.opts.disable_catch_panics;
 
@@ -147,8 +156,24 @@ fn handle<M: Model>(
         Err(m) => m,
     };
     let msg = match msg.downcast::<SuspendMsg>() {
-        // Suspend support is implemented in Phase 6.
-        Ok(_) => return Flow::Continue,
+        Ok(_) => {
+            #[cfg(unix)]
+            {
+                // Restore terminal before suspending so the shell gets a clean TTY.
+                if let Some(g) = guard.as_mut() {
+                    g.restore();
+                }
+                // SIGSTOP suspends us; we resume when the shell sends SIGCONT.
+                unsafe { libc::kill(libc::getpid(), libc::SIGSTOP); }
+                // After SIGCONT: re-enter raw mode and repaint.
+                if let Some(g) = guard.as_mut() {
+                    let _ = g.resume();
+                }
+                renderer.clear_screen();
+                let _ = msg_tx.send(crate::message::msg(crate::message::ResumeMsg));
+            }
+            return Flow::Continue;
+        }
         Err(m) => m,
     };
     let msg = match msg.downcast::<BatchMsg>() {
@@ -264,6 +289,35 @@ fn handle<M: Model>(
                     width: w,
                     height: h,
                 }));
+            }
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+
+    // ExecMsg: release terminal, run subprocess, restore, deliver callback result.
+    let msg = match msg.downcast::<ExecMsg>() {
+        Ok(exec) => {
+            let ExecMsg { mut command, callback } = *exec;
+            // Restore terminal so the child process gets a clean TTY.
+            if let Some(g) = guard.as_mut() {
+                g.restore();
+            }
+            let result = command.status();
+            let err = match result {
+                Ok(status) if status.success() => None,
+                Ok(status) => Some(crate::error::Error::Exec(
+                    std::io::Error::other(format!("process exited with {status}"))
+                )),
+                Err(e) => Some(crate::error::Error::Exec(e)),
+            };
+            // Re-enter raw mode.
+            if let Some(g) = guard.as_mut() {
+                let _ = g.resume();
+            }
+            renderer.clear_screen();
+            if let Some(result_msg) = callback(err) {
+                let _ = msg_tx.send(result_msg);
             }
             return Flow::Continue;
         }
