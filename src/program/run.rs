@@ -35,6 +35,13 @@ pub(crate) async fn run<M: Model>(mut program: Program<M>) -> Result<M> {
         Some(TerminalGuard::new()?)
     };
 
+    // Spawn the input reader when attached to a real terminal.
+    if let Some(g) = guard.as_ref() {
+        if g.is_tty() {
+            crate::input::spawn(msg_tx.clone(), program.cancel.clone());
+        }
+    }
+
     // Select a renderer. The real diff renderer arrives in Phase 3; until then a
     // plain line renderer is used (and a nil renderer when disabled).
     let mut renderer: Box<dyn Renderer> = if program.opts.disable_renderer {
@@ -92,7 +99,8 @@ pub(crate) async fn run<M: Model>(mut program: Program<M>) -> Result<M> {
     result.map(|()| program.model)
 }
 
-/// Render the current view and reconcile terminal state (alt screen) with it.
+/// Render the current view and reconcile terminal state (alt screen, mouse,
+/// focus reporting, bracketed paste) with it.
 fn apply_view<M: Model>(
     program: &Program<M>,
     renderer: &mut Box<dyn Renderer>,
@@ -101,6 +109,9 @@ fn apply_view<M: Model>(
     let view = program.model.view();
     if let Some(g) = guard {
         let _ = g.set_alt_screen(view.alt_screen);
+        let _ = g.set_mouse(view.mouse_mode);
+        let _ = g.set_focus(view.report_focus);
+        let _ = g.set_bracketed_paste(!view.disable_bracketed_paste);
     }
     renderer.render(&view);
 }

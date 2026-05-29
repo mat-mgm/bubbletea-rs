@@ -32,8 +32,12 @@ pub mod color;
 pub mod command;
 pub mod cursor;
 pub mod error;
+pub mod focus;
+pub mod input;
+pub mod key;
 pub mod message;
 pub mod model;
+pub mod mouse;
 pub mod options;
 pub mod program;
 pub mod renderer;
@@ -46,9 +50,14 @@ pub use color::{ColorProfile, ColorProfileMsg};
 pub use command::{batch, cmd, interrupt, quit, sequence, suspend, tick, Cmd};
 pub use cursor::{Cursor, CursorPositionMsg, CursorShape, Position};
 pub use error::{Error, Result};
+pub use focus::{BlurMsg, FocusMsg, PasteMsg};
+pub use key::{Key, KeyCode, KeyMod, KeyPressMsg, KeyReleaseMsg};
 pub use message::{
     msg, InterruptMsg, Msg, QuitMsg, ResumeMsg, SuspendMsg, WindowSizeMsg,
 };
 pub use model::Model;
+pub use mouse::{
+    Mouse, MouseButton, MouseClickMsg, MouseMotionMsg, MouseReleaseMsg, MouseWheelMsg,
+};
 pub use program::{Program, Sender};
 pub use view::{MouseMode, View};

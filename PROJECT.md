@@ -150,18 +150,23 @@ dispatch, panic recovery. Port of `tea.go` (`eventLoop`, `handleCommands`, `Send
 exercised properly once the diff renderer (Phase 3) lands. `WithFilter` deferred
 (needs model-aware filter design); tracked for a later phase.
 
-### Phase 2: Input [ ]
+### Phase 2: Input [✓]
 **Description**: Map crossterm events to `tea` messages. Port `key.go`,
 `keyboard.go`, `mouse.go`, `focus.go`, bracketed paste.
 
 **Tasks**
-- [ ] `key.rs` `KeyPressMsg`/`KeyReleaseMsg` + `to_string()` formatting
-- [ ] key-name string table **[sonnet]**
-- [ ] `mouse.rs` mouse messages + `MouseMode`
-- [ ] `focus.rs` focus/blur; paste → `PasteMsg`
+- [✓] `key.rs` `KeyPressMsg`/`KeyReleaseMsg` + `Display` keystroke formatting
+- [✓] key-name string table + 6 formatting unit tests
+- [✓] `mouse.rs` mouse messages + `MouseMode`
+- [✓] `focus.rs` focus/blur; paste → `PasteMsg`
+- [✓] `input.rs` async crossterm `EventStream` reader task (cancellable)
+- [✓] view-driven terminal modes (mouse/focus/bracketed-paste) in `TerminalGuard`
 
 **Checks**
-- [ ] a `print-key`-style example echoes keys/mouse/focus correctly
+- [✓] key-formatting unit tests pass (ctrl/alt/shift order, special keys, space)
+- [✓] `print_key` + updated `simple` examples build
+- [MANUAL] interactive echo of real keys/mouse/focus — needs a TTY; batched into
+  the post-Phase-3 manual check.
 
 **Dependencies**: Phase 1.
 

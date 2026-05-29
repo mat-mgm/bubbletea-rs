@@ -20,6 +20,13 @@ impl tea::Model for Model {
     }
 
     fn update(&mut self, msg: tea::Msg) -> Option<tea::Cmd> {
+        if let Some(k) = msg.downcast_ref::<tea::KeyPressMsg>() {
+            match k.to_string().as_str() {
+                "ctrl+c" | "q" => return Some(tea::quit()),
+                "ctrl+z" => return Some(tea::suspend()),
+                _ => {}
+            }
+        }
         if msg.is::<TickMsg>() {
             self.count -= 1;
             if self.count <= 0 {
