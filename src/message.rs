@@ -55,4 +55,10 @@ pub(crate) struct SequenceMsg(pub(crate) Vec<crate::command::Cmd>);
 pub(crate) struct PrintLineMsg(pub(crate) String);
 
 /// Internal: clear the screen.
-pub(crate) struct ClearScreenMsg;
+pub struct ClearScreenMsg;
+
+/// Internal: request current window size (triggers a fresh WindowSizeMsg).
+pub(crate) struct RequestWindowSizeMsg;
+
+/// A raw ANSI/VT sequence to write directly to the terminal.
+pub struct RawMsg(pub String);

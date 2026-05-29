@@ -91,6 +91,37 @@ async fn sequence_runs_in_order() {
     assert_eq!(model.order, vec![1, 2, 3]);
 }
 
+struct PrintModel;
+
+impl tea::Model for PrintModel {
+    fn init(&mut self) -> Option<tea::Cmd> {
+        // println is handled by the runtime (not delivered to update); just
+        // verify the program doesn't crash and exits cleanly after the print.
+        tea::batch(vec![
+            Some(tea::println("hello from init")),
+            Some(tea::quit()),
+        ])
+    }
+
+    fn update(&mut self, _msg: tea::Msg) -> Option<tea::Cmd> {
+        None
+    }
+
+    fn view(&self) -> tea::View {
+        tea::View::default()
+    }
+}
+
+#[tokio::test]
+async fn println_does_not_crash() {
+    tea::Program::new(PrintModel)
+        .without_input()
+        .without_renderer()
+        .run()
+        .await
+        .expect("program should exit cleanly after println");
+}
+
 struct ExternalQuit {
     ticks: u32,
 }

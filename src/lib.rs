@@ -28,6 +28,7 @@ pub const DEFAULT_FPS: u16 = 60;
 /// Maximum renderer frame rate.
 pub const MAX_FPS: u16 = 120;
 
+pub mod clipboard;
 pub mod color;
 pub mod command;
 pub mod cursor;
@@ -35,29 +36,36 @@ pub mod error;
 pub mod focus;
 pub mod input;
 pub mod key;
+pub mod logging;
 pub mod message;
 pub mod model;
 pub mod mouse;
 pub mod options;
 pub mod program;
 pub mod renderer;
+pub mod screen;
 pub mod terminal;
 pub mod view;
 
 // --- Public prelude-style re-exports (mirrors the flat `tea.X` Go API) --------
 
+pub use clipboard::{
+    read_clipboard, read_primary_clipboard, set_clipboard, set_primary_clipboard, ClipboardMsg,
+};
 pub use color::{ColorProfile, ColorProfileMsg};
-pub use command::{batch, cmd, interrupt, quit, sequence, suspend, tick, Cmd};
+pub use command::{batch, cmd, every, interrupt, printf, println, quit, raw,
+    request_window_size, sequence, suspend, tick, Cmd};
 pub use cursor::{Cursor, CursorPositionMsg, CursorShape, Position};
 pub use error::{Error, Result};
 pub use focus::{BlurMsg, FocusMsg, PasteMsg};
 pub use key::{Key, KeyCode, KeyMod, KeyPressMsg, KeyReleaseMsg};
 pub use message::{
-    msg, InterruptMsg, Msg, QuitMsg, ResumeMsg, SuspendMsg, WindowSizeMsg,
+    msg, InterruptMsg, Msg, QuitMsg, RawMsg, ResumeMsg, SuspendMsg, WindowSizeMsg,
 };
 pub use model::Model;
 pub use mouse::{
     Mouse, MouseButton, MouseClickMsg, MouseMotionMsg, MouseReleaseMsg, MouseWheelMsg,
 };
 pub use program::{Program, Sender};
+pub use screen::clear_screen;
 pub use view::{MouseMode, View};

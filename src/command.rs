@@ -85,3 +85,59 @@ where
         Some(crate::message::msg(f()))
     })
 }
+
+/// A command that ticks in sync with the system clock.
+///
+/// Analogue of `tea.Every`. Unlike [`tick`], which measures duration from
+/// invocation, `every` aligns to clock-truncated boundaries. Pass a duration
+/// and a mapping function that turns a `std::time::Instant` into a message.
+pub fn every<F, T>(duration: Duration, f: F) -> Cmd
+where
+    F: FnOnce(std::time::Instant) -> T + Send + 'static,
+    T: Send + 'static,
+{
+    cmd(async move {
+        // Compute delay to the next aligned boundary.
+        let now = tokio::time::Instant::now();
+        let elapsed_nanos = now.elapsed().as_nanos();
+        let dur_nanos = duration.as_nanos().max(1);
+        let remaining = dur_nanos - (elapsed_nanos % dur_nanos);
+        tokio::time::sleep(Duration::from_nanos(remaining as u64)).await;
+        Some(crate::message::msg(f(std::time::Instant::now())))
+    })
+}
+
+/// Print a line above the program (above the managed TUI frame).
+///
+/// Analogue of `p.Println`. Unlike direct `println!`, output from this command
+/// is correctly interleaved with the renderer's cursor management.
+pub fn println(s: impl Into<String> + Send + 'static) -> Cmd {
+    cmd(async move { Some(crate::message::msg(crate::message::PrintLineMsg(s.into()))) })
+}
+
+/// Print a formatted line above the program.
+///
+/// Analogue of `p.Printf`.
+pub fn printf(template: impl std::fmt::Display + Send + 'static) -> Cmd {
+    cmd(async move {
+        Some(crate::message::msg(crate::message::PrintLineMsg(
+            template.to_string(),
+        )))
+    })
+}
+
+/// Request the current terminal window size.
+///
+/// Analogue of `tea.RequestWindowSize`. A [`crate::WindowSizeMsg`] is delivered
+/// to `update`. This is rarely needed because size is sent automatically on
+/// start and on resize.
+pub fn request_window_size() -> Cmd {
+    cmd(async move { Some(crate::message::msg(crate::message::RequestWindowSizeMsg)) })
+}
+
+/// Send a raw ANSI/VT sequence directly to the terminal output.
+///
+/// Analogue of `tea.Raw`.
+pub fn raw(seq: impl Into<String> + Send + 'static) -> Cmd {
+    cmd(async move { Some(crate::message::msg(crate::message::RawMsg(seq.into()))) })
+}

@@ -10,9 +10,12 @@ use std::time::Duration;
 use super::Program;
 use crate::command::Cmd;
 use crate::error::{Error, Result};
+use crate::clipboard::{
+    ReadClipboardMsg, ReadPrimaryClipboardMsg, SetClipboardMsg, SetPrimaryClipboardMsg,
+};
 use crate::message::{
-    BatchMsg, ClearScreenMsg, InterruptMsg, Msg, PrintLineMsg, QuitMsg, SequenceMsg, SuspendMsg,
-    WindowSizeMsg,
+    BatchMsg, ClearScreenMsg, InterruptMsg, Msg, PrintLineMsg, QuitMsg, RawMsg,
+    RequestWindowSizeMsg, SequenceMsg, SuspendMsg, WindowSizeMsg,
 };
 use crate::model::Model;
 use crate::renderer::{NilRenderer, Renderer, StandardRenderer};
@@ -167,6 +170,68 @@ fn handle<M: Model>(
     let msg = match msg.downcast::<ClearScreenMsg>() {
         Ok(_) => {
             renderer.clear_screen();
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+
+    // Raw ANSI sequence: write directly to stdout.
+    let msg = match msg.downcast::<RawMsg>() {
+        Ok(raw) => {
+            use std::io::Write;
+            let _ = std::io::stdout().write_all(raw.0.as_bytes());
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+
+    // Clipboard write/read commands via OSC 52.
+    let msg = match msg.downcast::<SetClipboardMsg>() {
+        Ok(m) => {
+            use std::io::Write;
+            use base64::Engine;
+            let encoded = base64::engine::general_purpose::STANDARD.encode(m.0.as_bytes());
+            let _ = write!(std::io::stdout(), "\x1b]52;c;{encoded}\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    let msg = match msg.downcast::<SetPrimaryClipboardMsg>() {
+        Ok(m) => {
+            use std::io::Write;
+            use base64::Engine;
+            let encoded = base64::engine::general_purpose::STANDARD.encode(m.0.as_bytes());
+            let _ = write!(std::io::stdout(), "\x1b]52;p;{encoded}\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    let msg = match msg.downcast::<ReadClipboardMsg>() {
+        Ok(_) => {
+            use std::io::Write;
+            let _ = write!(std::io::stdout(), "\x1b]52;c;?\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    let msg = match msg.downcast::<ReadPrimaryClipboardMsg>() {
+        Ok(_) => {
+            use std::io::Write;
+            let _ = write!(std::io::stdout(), "\x1b]52;p;?\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    // RequestWindowSizeMsg: trigger a fresh size check via a WindowSizeMsg.
+    let msg = match msg.downcast::<RequestWindowSizeMsg>() {
+        Ok(_) => {
+            if let Some(g) = guard.as_ref() {
+                let (w, h) = g.size();
+                let _ = msg_tx.send(crate::message::msg(WindowSizeMsg {
+                    width: w,
+                    height: h,
+                }));
+            }
             return Flow::Continue;
         }
         Err(m) => m,
