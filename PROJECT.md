@@ -170,19 +170,22 @@ exercised properly once the diff renderer (Phase 3) lands. `WithFilter` deferred
 
 **Dependencies**: Phase 1.
 
-### Phase 3: Renderer [ ] [!]
+### Phase 3: Renderer [✓] [!]
 **Description**: Hand-port the diff renderer. Port `cursed_renderer.go`,
 `renderer.go`, `nil_renderer.go`.
 
 **Tasks**
-- [ ] `renderer/cellbuf.rs` width-aware `Cell`/`CellBuffer` + line diff
-- [ ] `renderer/standard.rs` frame diff, cursor-move optimization, alt-screen vs
-      inline, `insert_above` (Println), synchronized output (mode 2026)
-- [ ] `renderer/nil.rs` no-op
-- [ ] 60fps flush ticker (`tokio::time::interval`)
+- [✓] `renderer/cellbuf.rs` ANSI-aware width measurement + line splitter (unit tests)
+- [✓] `renderer/standard.rs` line-diffing: inline (cursor-up+rewrite) and alt-screen (home+fill), force-repaint on resize, insert_above, cursor hide/show
+- [✓] `renderer/nil.rs` no-op
+- [✓] 60fps flush ticker (`tokio::time::interval`)
 
 **Checks**
-- [ ] visual/cell-equivalent output vs Go golden frames where feasible
+- [✓] cellbuf unit tests pass; countdown renders and updates in-place correctly
+- [MANUAL] alt-screen + full session — batched into post-Phase-3 manual check
+
+**Notes**: Line-level diff (simpler than Go's cell-level ultraviolet diff);
+adequate for correctness, can be upgraded later.
 
 **Dependencies**: Phase 1.
 

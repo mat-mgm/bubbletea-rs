@@ -4,11 +4,14 @@
 //! cell renderer (port of `cursed_renderer.go`) lands in Phase 3 as
 //! `StandardRenderer`.
 
+pub mod cellbuf;
 mod nil;
 mod plain;
+mod standard;
 
 pub use nil::NilRenderer;
 pub use plain::PlainRenderer;
+pub use standard::StandardRenderer;
 
 use crate::view::View;
 

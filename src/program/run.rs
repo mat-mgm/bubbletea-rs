@@ -15,7 +15,7 @@ use crate::message::{
     WindowSizeMsg,
 };
 use crate::model::Model;
-use crate::renderer::{NilRenderer, PlainRenderer, Renderer};
+use crate::renderer::{NilRenderer, Renderer, StandardRenderer};
 use crate::terminal::TerminalGuard;
 
 /// Outcome of handling a single message in the loop.
@@ -42,12 +42,11 @@ pub(crate) async fn run<M: Model>(mut program: Program<M>) -> Result<M> {
         }
     }
 
-    // Select a renderer. The real diff renderer arrives in Phase 3; until then a
-    // plain line renderer is used (and a nil renderer when disabled).
+    // Select a renderer.
     let mut renderer: Box<dyn Renderer> = if program.opts.disable_renderer {
         Box::new(NilRenderer)
     } else {
-        Box::new(PlainRenderer::new())
+        Box::new(StandardRenderer::new(80, 24))
     };
 
     // Determine and seed the initial window size: explicit override, else the
