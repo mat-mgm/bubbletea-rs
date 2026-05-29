@@ -13,6 +13,9 @@ use crate::error::{Error, Result};
 use crate::clipboard::{
     ReadClipboardMsg, ReadPrimaryClipboardMsg, SetClipboardMsg, SetPrimaryClipboardMsg,
 };
+use crate::color::{
+    ColorProfileMsg, RequestBackgroundColorMsg, RequestCursorColorMsg, RequestForegroundColorMsg,
+};
 use crate::message::{
     BatchMsg, ClearScreenMsg, InterruptMsg, Msg, PrintLineMsg, QuitMsg, RawMsg,
     RequestWindowSizeMsg, SequenceMsg, SuspendMsg, WindowSizeMsg,
@@ -44,6 +47,10 @@ pub(crate) async fn run<M: Model>(mut program: Program<M>) -> Result<M> {
             crate::input::spawn(msg_tx.clone(), program.cancel.clone());
         }
     }
+
+    // Detect and broadcast the color profile.
+    let profile = program.opts.color_profile.unwrap_or_else(crate::color::detect_profile);
+    let _ = msg_tx.send(crate::message::msg(ColorProfileMsg(profile)));
 
     // Select a renderer.
     let mut renderer: Box<dyn Renderer> = if program.opts.disable_renderer {
@@ -222,6 +229,32 @@ fn handle<M: Model>(
         }
         Err(m) => m,
     };
+    // Color query commands: emit OSC queries, terminal responds asynchronously.
+    let msg = match msg.downcast::<RequestBackgroundColorMsg>() {
+        Ok(_) => {
+            use std::io::Write;
+            let _ = write!(std::io::stdout(), "\x1b]11;?\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    let msg = match msg.downcast::<RequestForegroundColorMsg>() {
+        Ok(_) => {
+            use std::io::Write;
+            let _ = write!(std::io::stdout(), "\x1b]10;?\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+    let msg = match msg.downcast::<RequestCursorColorMsg>() {
+        Ok(_) => {
+            use std::io::Write;
+            let _ = write!(std::io::stdout(), "\x1b]12;?\x07");
+            return Flow::Continue;
+        }
+        Err(m) => m,
+    };
+
     // RequestWindowSizeMsg: trigger a fresh size check via a WindowSizeMsg.
     let msg = match msg.downcast::<RequestWindowSizeMsg>() {
         Ok(_) => {

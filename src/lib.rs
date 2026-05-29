@@ -52,7 +52,10 @@ pub mod view;
 pub use clipboard::{
     read_clipboard, read_primary_clipboard, set_clipboard, set_primary_clipboard, ClipboardMsg,
 };
-pub use color::{ColorProfile, ColorProfileMsg};
+pub use color::{
+    detect_profile, request_background_color, request_cursor_color, request_foreground_color,
+    BackgroundColorMsg, ColorProfile, ColorProfileMsg, CursorColorMsg, ForegroundColorMsg,
+};
 pub use command::{batch, cmd, every, interrupt, printf, println, quit, raw,
     request_window_size, sequence, suspend, tick, Cmd};
 pub use cursor::{Cursor, CursorPositionMsg, CursorShape, Position};
@@ -68,4 +71,4 @@ pub use mouse::{
 };
 pub use program::{Program, Sender};
 pub use screen::clear_screen;
-pub use view::{MouseMode, View};
+pub use view::{KeyboardEnhancements, MouseMode, ProgressBar, ProgressBarState, View};

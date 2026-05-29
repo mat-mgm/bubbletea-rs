@@ -153,6 +153,19 @@ impl StandardRenderer {
             let _ = write!(out, "\x1b]0;{}\x07", view.window_title);
         }
 
+        // Progress bar (OSC 9;4 — Windows Terminal).
+        if let Some(pb) = &view.progress_bar {
+            use crate::view::ProgressBarState;
+            let seq = match pb.state {
+                ProgressBarState::None => "\x1b]9;4;0;0\x07".to_string(),
+                ProgressBarState::Default => format!("\x1b]9;4;1;{}\x07", pb.value),
+                ProgressBarState::Error => format!("\x1b]9;4;2;{}\x07", pb.value),
+                ProgressBarState::Indeterminate => "\x1b]9;4;3;0\x07".to_string(),
+                ProgressBarState::Warning => format!("\x1b]9;4;4;{}\x07", pb.value),
+            };
+            let _ = write!(out, "{seq}");
+        }
+
         // Split content into lines.
         let lines: Vec<String> = split_lines(&view.content)
             .into_iter()
@@ -191,7 +204,7 @@ impl StandardRenderer {
 
 impl Renderer for StandardRenderer {
     fn render(&mut self, view: &View) {
-        // Clone the view (ANSI content + metadata) for later flush.
+        // Shallow-clone the view for deferred flushing.
         self.pending = Some(View {
             content: view.content.clone(),
             cursor: view.cursor,
@@ -200,6 +213,10 @@ impl Renderer for StandardRenderer {
             disable_bracketed_paste: view.disable_bracketed_paste,
             mouse_mode: view.mouse_mode,
             window_title: view.window_title.clone(),
+            foreground_color: view.foreground_color,
+            background_color: view.background_color,
+            progress_bar: view.progress_bar,
+            keyboard_enhancements: view.keyboard_enhancements,
         });
     }
 
