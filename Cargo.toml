@@ -25,3 +25,31 @@ tokio = { version = "1", features = ["full"] }
 [[example]]
 name = "simple"
 path = "examples/simple.rs"
+
+[[example]]
+name = "altscreen"
+path = "examples/altscreen.rs"
+
+[[example]]
+name = "spinner"
+path = "examples/spinner.rs"
+
+[[example]]
+name = "mouse"
+path = "examples/mouse.rs"
+
+[[example]]
+name = "progress"
+path = "examples/progress.rs"
+
+[[example]]
+name = "exec"
+path = "examples/exec.rs"
+
+[[example]]
+name = "send_msg"
+path = "examples/send_msg.rs"
+
+[[example]]
+name = "print_key"
+path = "examples/print_key.rs"
