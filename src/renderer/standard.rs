@@ -77,9 +77,9 @@ impl StandardRenderer {
         for (i, new_line) in lines.iter().enumerate() {
             let old_line = self.last_lines.get(i).unwrap_or(&empty);
             if !force && new_line == old_line {
-                // Unchanged — move down to the next line.
+                // Advance one row without scrolling — mirrors Go's CursorDown1.
                 if i + 1 < lines.len() {
-                    let _ = write!(out, "\n");
+                    let _ = write!(out, "\x1b[B");
                 }
                 continue;
             }
@@ -117,8 +117,12 @@ impl StandardRenderer {
             let new_line = lines.get(idx).unwrap_or(&empty);
             let old_line = self.last_lines.get(idx).unwrap_or(&empty);
             if !force && new_line == old_line {
-                // Skip to next row.
-                let _ = write!(out, "\r\n");
+                // Advance one row without scrolling. Use cursor-down (\x1b[B)
+                // rather than \n so the terminal never scrolls — mirrors Go's
+                // CursorDown1 in standard_renderer.go. No-op on the last row.
+                if row + 1 < rows {
+                    let _ = write!(out, "\x1b[B");
+                }
                 continue;
             }
             let _ = write!(out, "\r{new_line}{ERASE_EOL}");

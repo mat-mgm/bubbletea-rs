@@ -177,6 +177,7 @@ exercised properly once the diff renderer (Phase 3) lands. `WithFilter` deferred
 **Tasks**
 - [✓] `renderer/cellbuf.rs` ANSI-aware width measurement + line splitter (unit tests)
 - [✓] `renderer/standard.rs` line-diffing: inline (cursor-up+rewrite) and alt-screen (home+fill), force-repaint on resize, insert_above, cursor hide/show
+- [✓] `renderer/standard.rs` avoid scrolling on inline repaint by using cursor-down (`\x1b[B`) instead of newline, matching Go's `CursorDown1`
 - [✓] `renderer/nil.rs` no-op
 - [✓] 60fps flush ticker (`tokio::time::interval`)
 
